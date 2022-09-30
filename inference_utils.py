@@ -217,6 +217,4 @@ class SGLInference(object):
 
         output = Image.fromarray(pred_mask)
 
-        output.save('AAAAMASKL.png')
-
         return output
