@@ -11,21 +11,22 @@ from streamlit_image_comparison import image_comparison
 
 def get_mask_from_image(
         _image: Image,
-        _api: str = 'http://localhost:9009/predict') -> np.ndarray:
+        _api: str = 'http://localhost:9009/predict',
+        _model: str = 'MAnet') -> np.ndarray:
     image_file = io.BytesIO()
-    _image.save(image_file, 'WebP')
+    _image.save(image_file, 'PNG')
     image_file.seek(0)
 
     mp_encoder = MultipartEncoder(
         fields={
             'image': (
                 'image', image_file,
-                'image/webp'
+                'image/png'
             )
         }
     )
     response = requests.post(
-        url=_api,
+        url=_api + '_{}'.format(str(_model).lower()),
         data=mp_encoder,
         headers={'Content-Type': mp_encoder.content_type}
     )
@@ -65,11 +66,13 @@ def main():
         > Powered by [Kovalenko Alexey](https://github.com/AlexeySrus)
         """)
 
+    model = st.selectbox("Select model to predict vessel mask", ("MANet", "SGL"))
+
     uploaded_file = st.file_uploader("Choose an image...", type=["png", "jpg", "jpeg", "webp"])
     if uploaded_file is not None:
         original_image = Image.open(uploaded_file)
         original_image = ImageOps.exif_transpose(original_image)
-        mask = get_mask_from_image(original_image)
+        mask = get_mask_from_image(original_image, _model=model)
         result = draw_mask(original_image, mask)
 
         image_comparison(

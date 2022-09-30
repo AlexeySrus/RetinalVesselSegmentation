@@ -32,6 +32,10 @@
 
 Код расположеный по пути: `./training/MedISeg/` также поддерживает описанный ниже формат данных.
 
+Дополнительно была обучена модель SGL-Retinal-Vessel-Segmentation, часто визуально демонстрирует результаты лучше, но
+публичной тестовой метрике уступает предыдущему решению (имеет 0.48).
+Веса для неё доступны по ссылке: [SGL weights](https://drive.google.com/uc?id=1SVLlx86RPRZ5yWO6DuICHhAalx0gWV3X "Google Drive")
+
 ### Запуск обучения
 
 #### Конвертация данных
@@ -128,7 +132,7 @@ docker run --restart=always \
 
 Для тестирования микросервиса напрямую, можно воспользоваться следующей командой:
 ```shell
-curl -F image=@Image.png http://localhost:9009/predict -o res_mask.webp
+curl -F image=@Image.png http://localhost:9009/predict_sgl -o res_mask.webp
 ```
 
 ***Note:*** Для более эффективного запуска модели на CPU можно сконвертировать её в ONNX

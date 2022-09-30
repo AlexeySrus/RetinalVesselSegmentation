@@ -67,18 +67,37 @@ def tta_inference(_t: torch.Tensor, _model: torch.nn.Module) -> torch.Tensor:
     return avg_out.mean(dim=0)
 
 
+def np2Tensor(*args, rgb_range=255, single_test=False):
+    def _np2Tensor(img):
+        np_transpose = np.ascontiguousarray(img.transpose((2, 0, 1)))
+        if single_test:
+            np_transpose = np.expand_dims(np_transpose, 0)
+        tensor = torch.from_numpy(np_transpose).float()
+        tensor.mul_(rgb_range / 255)
+
+        return tensor
+
+    return [_np2Tensor(a) for a in args]
+
+
 def postprocess_mask(_mask, morph_r=3, th_k=2):
-    init_mask = cv2.morphologyEx(
-        _mask, cv2.MORPH_CLOSE,
-        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_r, morph_r))
-    )
+    if morph_r is not None:
+        init_mask = cv2.morphologyEx(
+            _mask, cv2.MORPH_CLOSE,
+            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_r, morph_r))
+        )
+    else:
+        init_mask = _mask.copy()
 
     contours, hierarchy = cv2.findContours(init_mask, cv2.RETR_TREE,
                                            cv2.CHAIN_APPROX_SIMPLE)
 
     cnt_areas = np.array([cv2.contourArea(cnt) for cnt in contours])
 
-    th = cnt_areas.mean() / th_k
+    if th_k is not None:
+        th = cnt_areas.mean() / th_k
+    else:
+        th = 50
 
     selected_contours = [
         cnt
@@ -165,5 +184,39 @@ class SegmentationInference(object):
         pred_mask = postprocess_mask(pred_mask)
 
         output = Image.fromarray(pred_mask)
+
+        return output
+
+
+class SGLInference(object):
+    def __init__(self, model_path: str, device: str = 'cpu'):
+        self.sgl_model = torch.jit.load(model_path, map_location=device)
+        self.sgl_model.eval()
+        self.device = device
+
+    def __call__(self, input_data: Image) -> Image:
+        np_image = np.array(input_data.convert('RGB'))
+
+        img_tensor = np2Tensor(np_image)[0]
+
+        imgt = torch.zeros(1, 3, 2000, 2000)
+        imgt[0, :, :img_tensor.size(1), :img_tensor.size(2)] = img_tensor
+        imgt = imgt.to(self.device)
+
+        with torch.no_grad():
+            enchance, est_o = self.sgl_model(
+                imgt,
+                torch.LongTensor([1]).to(self.device)
+            )
+            est_o = est_o.cpu()[0, 0, :img_tensor.size(1), :img_tensor.size(2)]
+
+        eomask = (est_o * 255.).numpy().astype(np.uint8)
+        eomask = ((eomask > 100) * 255).astype(np.uint8)
+
+        pred_mask = postprocess_mask(eomask, None, None)
+
+        output = Image.fromarray(pred_mask)
+
+        output.save('AAAAMASKL.png')
 
         return output

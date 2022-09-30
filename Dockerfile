@@ -25,6 +25,7 @@ RUN mkdir data/
 RUN pip3 install gdown
 WORKDIR /app/data/
 RUN gdown "https://drive.google.com/uc?id=1BpmQegcb06zc4HnmIrZSpK3yaVTf5GRK"
+RUN gdown "https://drive.google.com/uc?id=1SVLlx86RPRZ5yWO6DuICHhAalx0gWV3X"
 WORKDIR /app/
 
 CMD python3 flask_service.py
