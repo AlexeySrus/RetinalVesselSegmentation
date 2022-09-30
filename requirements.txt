@@ -4,6 +4,6 @@ torchvision
 Flask==2.2.2
 requests-toolbelt==0.9.1
 albumentations
-streamlit==1.12.2
+streamlit
 streamlit-image-comparison==0.0.2
 tqdm

@@ -3,8 +3,12 @@
 # And comment the following one:
 FROM ubuntu:20.04
 
+EXPOSE 9009
+
 # configure timezone, our app depends on it.
-RUN /usr/bin/ln -sf /usr/share/zoneinfo/America/Toronto /etc/localtime
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Moscow
+# RUN /usr/bin/ln -sf /usr/share/zoneinfo/America/Toronto /etc/localtime
 
 
 RUN apt-get update && \
@@ -23,7 +27,4 @@ WORKDIR /app/data/
 RUN gdown "https://drive.google.com/uc?id=1BpmQegcb06zc4HnmIrZSpK3yaVTf5GRK"
 WORKDIR /app/
 
-EXPOSE 8501
-EXPOSE 9009
-
-CMD screen -dmS SegmentationServer bash -c "python3 flask_service.py";streamlit run app.py --server.address='0.0.0.0'
+CMD python3 flask_service.py

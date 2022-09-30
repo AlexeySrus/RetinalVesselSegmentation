@@ -113,27 +113,31 @@ if __name__ == '__main__':
 
     model = model.to(device)
 
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=config['train']['lr'],
+        weight_decay=config['train']['weight_decay'],
+        betas=(0.9, 0.99)
+    )
     # optimizer = torch.optim.SGD(
     #     model.parameters(),
     #     lr=config['train']['lr'],
+    #     momentum=0.9,
     #     weight_decay=config['train']['weight_decay']
     # )
-    optimizer = torch.optim.SGD(
-        model.parameters(),
-        lr=config['train']['lr'],
-        momentum=0.9,
-        weight_decay=config['train']['weight_decay']
-    )
+
+    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     ckp = None
     if os.path.exists(latest_path):
         print('Load from: {}'.format(latest_path))
         ckp = torch.load(latest_path)
         model.load_state_dict(ckp['model'])
-        # optimizer.load_state_dict(ckp['optimizer'])
+        optimizer.load_state_dict(ckp['optimizer'])
         # start_epoch = ckp['epoch']
+        # lr_scheduler.load_state_dict(ckp['scheduler'])
 
-        optimizer.param_groups[0]['lr'] = config['train']['lr']
+        # optimizer.param_groups[0]['lr'] = config['train']['lr']
 
     # mean = np.array([187.37888289, 60.40710529, 30.97342565]) / 255
     # std = np.array([34.97379752, 20.30510642, 11.72539536]) / 255
@@ -163,20 +167,19 @@ if __name__ == '__main__':
                 A.VerticalFlip(p=0.2),
                 A.ISONoise(p=0.1),
                 # A.GaussianBlur(p=0.5),
-                A.Rotate(limit=15, p=0.2, border_mode=cv2.BORDER_CONSTANT,
-                         mask_value=1),
-                A.Affine(scale=(0.9, 1.2), p=0.5),
-                A.Perspective(mask_pad_val=1, p=0.2),
+                # A.Rotate(limit=15, p=0.2, border_mode=cv2.BORDER_CONSTANT, mask_value=1),
+                # A.Affine(scale=(0.9, 1.2), p=0.5),
+                # A.Perspective(mask_pad_val=1, p=0.2),
                 A.ElasticTransform(p=0.2, mask_value=1,
                                    border_mode=cv2.BORDER_CONSTANT),
                 A.GridDistortion(p=0.2, mask_value=1,
                                  border_mode=cv2.BORDER_CONSTANT),
                 A.OpticalDistortion(p=0.2, mask_value=1,
                                     border_mode=cv2.BORDER_CONSTANT),
-                # A.CLAHE(p=0.5),
+                A.CLAHE(p=0.5),
                 # A.ColorJitter(p=0.5),
-                # A.RandomBrightnessContrast(p=0.5),
-                # A.RandomGamma(p=0.2),
+                A.RandomBrightnessContrast(p=0.5),
+                A.RandomGamma(p=0.2),
                 # A.ImageCompression(quality_lower=35, p=0.2)
             ]
         )
@@ -189,6 +192,7 @@ if __name__ == '__main__':
         augmentations=train_augmentations,
         # mean=[187.37888289, 60.40710529, 30.97342565],
         # std=[34.97379752, 20.30510642, 11.72539536]
+        scale=config['dataset']['dataset_size_scale']
     )
 
     validation_dataset = MaskDataset(
@@ -198,6 +202,7 @@ if __name__ == '__main__':
         shape=tuple(config['dataset']['shape']),
         # mean=[187.37888289, 60.40710529, 30.97342565],
         # std=[34.97379752, 20.30510642, 11.72539536]
+        scale=config['dataset']['dataset_size_scale']
     )
 
     print('Train dataset size: {}'.format(len(train_dataset)))
@@ -220,12 +225,6 @@ if __name__ == '__main__':
         shuffle=False
     )
 
-    lr_scheduler = None
-    # lr_scheduler = create_lr_scheduler(optimizer, len(train_data), epochs, warmup=True)
-    if lr_scheduler is not None and ckp is not None:
-        if 'scheduler' in ckp.keys():
-            lr_scheduler.load_state_dict(ckp['scheduler'])
-
     if use_apex:
         opt_level = 'O1'
         model, optimizer = amp.initialize(model, optimizer, opt_level=opt_level)
@@ -237,14 +236,14 @@ if __name__ == '__main__':
                 print('Can\'t load APEX parameters, because: {}'.format(e))
 
     os.makedirs(config['train']['save']['model'], exist_ok=True)
-    # loss_functions = []
 
-    # loss_function = torch.nn.CrossEntropyLoss(weight=dataset_weights)
-    loss_function = CE_DiceLoss()
+    loss_function = torch.nn.CrossEntropyLoss()
+    # loss_function = CE_DiceLoss()
+    # loss_function = FocalLoss()
     # loss_function = SoftIoULoss(n_classes=2)
     # loss_function = smp.losses.tversky.TverskyLoss('multiclass')
 
-    # loss_functions.append(smp.losses.tversky.TverskyLoss('multiclass'))
+    # loss_functions = []
     # loss_functions.append(CE_DiceLoss())
     # loss_functions.append(SoftIoULoss(n_classes=2))
     # loss_functions.append(FocalLoss())
@@ -286,9 +285,6 @@ if __name__ == '__main__':
 
                     optimizer.zero_grad()
 
-                    if lr_scheduler is not None:
-                        lr_scheduler.step()
-
                 avg_train_loss += loss.item()
 
                 pbar.postfix = \
@@ -308,6 +304,9 @@ if __name__ == '__main__':
                 )
 
                 pbar.update(1)
+
+        if lr_scheduler is not None:
+            lr_scheduler.step()
 
         avg_train_loss = avg_train_loss / len(train_data)
 

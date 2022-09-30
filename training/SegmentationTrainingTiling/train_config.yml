@@ -7,34 +7,25 @@ visualization:
         every: 100
         scale: 1
 
-    use_tensorboard: False
-    tensorboard_logdir: ''
-    save_historgam: False
-
 model:
-    net: 'resnet50'
+    net: 'tu-efficientnetv2_s'
     input_channels: 3
     model_classes: 2
 
 dataset:
-    train_images_path: '/media/alexey/HDDDataDIsk/datasets/RetinalVesselSegmentation/CompetitionDataset/segmentation_representation/train/images/'
-    train_masks_path: '/media/alexey/HDDDataDIsk/datasets/RetinalVesselSegmentation/CompetitionDataset/segmentation_representation/train/masks/'
-    test_images_path: '/media/alexey/HDDDataDIsk/datasets/RetinalVesselSegmentation/CompetitionDataset/segmentation_representation/val/images/'
-    test_masks_path: '/media/alexey/HDDDataDIsk/datasets/RetinalVesselSegmentation/CompetitionDataset/segmentation_representation/val/masks/'
-#    train_images_path: '/media/alexey/HDDDataDIsk/datasets/RetinalVesselSegmentation/CHASE_DB1/HRF/images/'
-#    train_masks_path: '/media/alexey/HDDDataDIsk/datasets/RetinalVesselSegmentation/CHASE_DB1/HRF/manual1/'
-#    test_images_path: '/media/alexey/HDDDataDIsk/datasets/RetinalVesselSegmentation/CHASE_DB1/DRIVE/training/images/'
-#    test_masks_path: '/media/alexey/HDDDataDIsk/datasets/RetinalVesselSegmentation/CHASE_DB1/DRIVE/training/1st_manual/'
-    shape: [256, 256]   # [width, height]
+    train_images_path: 'PATH_TO_IMAGES_FOLDER'
+    train_masks_path: 'PATH_TO_IMAGES_MASKS'
+    test_images_path: 'PATH_TO_IMAGES_FOLDER'
+    test_masks_path: 'PATH_TO_IMAGES_MASKS'
+    shape: [256, 256]
     use_augmentations: True
 
 train:
-    optimizer: 'RAdam'
     lr: 0.001
     max_lr: -1
     weight_decay: 0
 
-    gradient_accumulation_steps: 8
+    gradient_accumulation_steps: 4
 
     epochs: 5000
     batch_size: 1
@@ -42,25 +33,10 @@ train:
 
     augmentation: True
 
-    distribution_learning:
-        enable: False
-        devices: ['cuda:0', 'cuda:1']
-
     use_apex: False
 
     save:
-        model: '/media/alexey/SSDDataDisk/experiments/RetinalVesselSegmentation/CompetitionDatasetTiling/MANet_resnet50_256/'
-        every: 1
+        model: './experiments/MANet_efficientnetv2_s_256/'
 
     load: True
     load_optimizer: True
-
-    checkpoint:
-        use: False
-        model: ''
-        optimizer: ''
-
-logging:
-    use_logger: False
-    log_path: ''
-    log_step: 1

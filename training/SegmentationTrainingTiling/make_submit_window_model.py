@@ -82,7 +82,7 @@ def inference_tiling_intersected(
     res_mask = torch.zeros(img.size(1), img.size(2), dtype=torch.float32, device=img.device)
     counter_mask = torch.zeros(img.size(1), img.size(2), dtype=torch.long, device=img.device)
 
-    stride = tile_size // 32
+    stride = tile_size // 2
 
     x0_vec = []
     y0_vec = []
@@ -146,8 +146,8 @@ transforms = A.Compose(
 )
 
 device = 'cuda'
-model_path = '../third_patry/SA_Uet-pytorch/weights/new_data_pt_best_model_traced_256.pt'
-# model_path = '/media/alexey/SSDDataDisk/experiments/RetinalVesselSegmentation/CompetitionDatasetTiling/unetpp_resnet50_256/last_state_trace.pt'
+# model_path = '../third_patry/SA_Uet-pytorch/weights/new_data_pt_best_model_traced_256.pt'
+model_path = '/media/alexey/SSDDataDisk/experiments/RetinalVesselSegmentation/CompetitionDatasetTiling/MANet_efficientnetv2_s_256/last_state_trace.pt'
 model = torch.jit.load(model_path).to(device)
 _ = model.eval()
 
@@ -167,8 +167,8 @@ for basename in tqdm(input_names):
 
     img_tensor = sample["image"].to(device)
     with torch.no_grad():
-        out = inference_tiling_intersected(img_tensor, model).to('cpu')
-        # out = inference_tiling_intersected(img_tensor, lambda _x: torch.softmax(model(_x), dim=1)[:, 0:1]).to('cpu')
+        # out = inference_tiling_intersected(img_tensor, model).to('cpu')
+        out = inference_tiling_intersected(img_tensor, lambda _x: torch.softmax(model(_x), dim=1)[:, 0:1]).to('cpu')
 
     np.save(
         npy_path,
