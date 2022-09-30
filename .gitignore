@@ -1,6 +1,9 @@
 # IDEA
 .idea/
 
+# Datasets
+*/dataset
+
 # Models
 *.pt
 
