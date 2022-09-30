@@ -68,10 +68,40 @@ optional arguments:
 Профильтрованный набор данных можно скачать по [следующей ссылке](https://disk.yandex.ru/d/cac9w9lM2z3lKA "Yandex Disk")
 
 
-#### Запуск обучение кастомного пайалйна
+#### Запуск обучение кастомного пайалйна обучения
 Реализованный мной код для обучения находятся в директории: `./training/SegmentationTrainingTiling/`\
 Чтобы запустить обучения на подготовленных данных сначала нужно настроить конфигурационный файл:
 `./training/SegmentationTrainingTiling/train_config.yml`, а именно указать пути до тренировочных и валидационных данных.
+
+### Обработка тестового набора данных моделью (получение сабмита)
+Для этого необходимо скачать обученную модель по [ссылке](https://disk.yandex.ru/d/CCGEJNWI2C-xNg "Yandex Disk").\
+Затем инференс происходит в два этапа (скрипты находятся в директории пайплайна для обучения):
+1. Запуск инференса модели на изображениях для получения вероятностных масок
+```shell
+usage: make_submit_window_model.py [-h] [-i INPUT] [-o OUTPUT] [-m MODEL]
+
+Make submit
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        Path to test folder
+  -o OUTPUT, --output OUTPUT
+                        Path to submit folder
+  -m MODEL, --model MODEL
+                        Path to traced PyTorch model
+```
+2. Запустить шаг постобработки следующим скриптом:
+```shell
+usage: recompute_submit_with_threshold.py [-h] [-o OUTPUT]
+
+Make submit
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        Path to submit folder
+```
 
 ## Веб интерфейс и микросервис
 Обученную модель интегрировал в микросервис, который обрабатывает http запросы.\
@@ -133,9 +163,12 @@ streamlit run app.py
 Результаты получаются следующими (сверху результат UGATIT, снизу синтес с помощью DCGAN):
 ![Generated data](figures/viz_synth.png)
 
+Для переноса домена из масок в изображения части глаза был выбран unsupervised подход в связи с наличием шума в данных
+Сделал гипотизу, что такиим образом получится генерировать "чистую" выборку для обучения.
+
 Но данную генерацию можно значительно улучшить:
 - Дольше обучать модели
-- Посколку тут использовал unsupervised подход для смены домена, можно попробовать использовать supervised реализации
+- Посколку тут использовал unsupervised подход для смены домена, можно попробовать лушче профильтровать данные и использовать supervised реализации
 
 Предобученные модели можно скачать по [ссылке](https://disk.yandex.ru/d/Ki8cBjv00XJjCQ "Yandex Disk")
 
